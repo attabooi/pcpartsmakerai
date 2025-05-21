@@ -1,0 +1,113 @@
+<context>
+# Overview
+TaskMaster AI helps casual gamers, small PC builders, and content creators make informed PC component choices based on verified specifications and pricing data.
+It solves the problem of fragmented and confusing information by providing structured tier lists and AI-powered custom build recommendations.
+The service reduces research time, improves decision-making confidence, and delivers expert-level insights in an easy-to-use web platform.
+
+# Core Features
+## Tier List Explorer (Free, Ad-Supported)
+- What it does:
+  Provides categorized rankings of PC components based on performance and value.
+- Why it's important:
+  Helps users quickly identify suitable components without needing technical expertise.
+- How it works at a high level:
+  Uses structured data (specs, benchmarks, prices) to sort and display tier lists. Clicking on an item reveals specs and beginner-friendly explanations.
+
+## AI Custom Build Generator (Premium, Pay-per-Use)
+- What it does:
+  Generates optimized PC build recommendations based on user-defined goals and budget.
+- Why it's important:
+  Offers reliable, purpose-fit configurations with compatibility checks.
+- How it works at a high level:
+  Collects user requirements, runs an AI-driven selection engine, and outputs a shareable, downloadable build summary.
+
+# User Experience
+## User Personas
+- Casual gamers seeking to build or upgrade PCs.
+- Content creators needing reliable build data.
+- Small PC builders serving client needs.
+
+## Key User Flows
+1. Discover the service via social media or word-of-mouth.
+2. Explore free tier lists based on value and performance.
+3. Engage with the AI Build Generator for personalized recommendations.
+4. Save, share, or export the recommended build.
+
+## UI/UX Considerations
+- Fully mobile-responsive design.
+- Modern, minimal SaaS-style interface.
+- Beginner-friendly explanations for technical terms.
+- Simple navigation with clear calls to action.
+</context>
+
+<PRD>
+# Technical Architecture
+## System Components
+- Frontend: Next.js + React + Tailwind
+- Backend: Node.js (Firebase Functions)
+- Data Crawler: Python (BeautifulSoup/Playwright)
+- Database: Firebase Firestore (NoSQL)
+- Admin Dashboard: Internal management tool
+
+## Data Models
+- Component Specs: Name, brand, category, specs, benchmarks, price
+- User Data: Email, purchase history, build history
+- Tier List Definitions: Category-based rankings
+- Build Records: User requests and AI-generated results
+
+## APIs and Integrations
+- TechPowerUp, PassMark, Geekbench (reference data)
+- Amazon/Newegg API or scraping (pricing)
+- Stripe/PortOne (payment)
+- Firebase Authentication (user management)
+
+## Infrastructure Requirements
+- Vercel (Frontend Hosting)
+- Firebase (Serverless Functions + Database)
+- GitHub + Vercel CI/CD for deployment automation
+
+# Development Roadmap
+## MVP Requirements
+- Free tier list explorer with categorized rankings.
+- AI-powered build generator based on user budget and goals.
+- PDF export and shareable link for build results.
+- Ad-supported free experience.
+- Pay-per-use premium build service.
+- English and Korean language support.
+
+## Future Enhancements
+- Game-specific build recommendations.
+- Affiliate links to Amazon/Newegg.
+- Multi-language expansion (e.g., Spanish, German).
+- Advanced build comparison tools.
+- Community build sharing features.
+
+# Logical Dependency Chain
+- Build the component database (manual + crawler-assisted).
+- Launch the public tier list explorer.
+- Implement the AI build generator.
+- Integrate payment processing for premium builds.
+- Enable build sharing and export features.
+- Expand with game-specific and affiliate-linked recommendations.
+
+# Risks and Mitigations
+## Technical Challenges
+- Risk: Difficulty sourcing accurate specs and pricing.
+  Mitigation: Start with manual data from trusted sources and scale to automated scraping.
+- Risk: Inaccurate AI build recommendations.
+  Mitigation: Launch with simple rule-based logic, improve through feedback.
+
+## MVP Scope Risks
+- Risk: Overcomplicating AI build logic.
+  Mitigation: Focus on delivering one solid build per request in MVP.
+
+## Resource Constraints
+- Risk: Solo development limitations.
+  Mitigation: Utilize serverless tools and limit MVP scope to core features.
+
+# Appendix
+- TechPowerUp GPU Specs Database: https://www.techpowerup.com/gpu-specs/
+- Tom's Hardware GPU Hierarchy: https://www.tomshardware.com/reviews/gpu-hierarchy,4388.html
+- NVIDIA Official Comparison Page: https://www.nvidia.com/en-us/geforce/graphics-cards/compare/
+- Benchmark references: PassMark, Geekbench, UserBenchmark
+</PRD>
