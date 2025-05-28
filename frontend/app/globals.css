@@ -9,3 +9,33 @@ body {
   /* Smooth font rendering for mozilla browsers */
   -moz-osx-font-smoothing: grayscale;
 }
+
+@keyframes slowMove {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-20px) translateY(10px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+@keyframes slowerMove {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(30px) translateY(-15px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+@keyframes slowestMove {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-15px) translateY(20px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+.animate-slow-move {
+  animation: slowMove 30s ease-in-out infinite;
+}
+
+.animate-slower-move {
+  animation: slowerMove 45s ease-in-out infinite;
+}
+
+.animate-slowest-move {
+  animation: slowestMove 60s ease-in-out infinite;
+}
