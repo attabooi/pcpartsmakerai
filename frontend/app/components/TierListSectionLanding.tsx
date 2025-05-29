@@ -48,26 +48,13 @@ const PartCard = ({ part }: { part: PartData }) => {
   const brandTextColor = BRAND_COLORS[part.brand || 'default'] || BRAND_COLORS.default;
 
   return (
-    <div className={`relative group bg-slate-800/70 border border-slate-700/80 rounded-lg p-3 transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-[1.02] min-h-[100px] flex flex-col justify-between cursor-pointer`}>
-      <div className="flex items-center justify-between">
-        <h3 className={`text-sm font-semibold ${brandTextColor} mb-1 truncate`} title={part.name}>{part.name}</h3>
-        <p className="text-xs text-sky-300/80">
-          Score: <span className="font-medium text-sky-200">{part.performance_score !== undefined ? part.performance_score : 'N/A'}</span>
-        </p>
+    <div className={`relative group bg-slate-800/70 border border-slate-700/80 rounded-lg p-2 transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-[1.02] min-h-[80px] flex flex-col justify-between cursor-pointer`}>
+      <div className="flex justify-between items-center">
+        <h3 className={`text-xs font-semibold ${brandTextColor} truncate`} title={part.name}>{part.name}</h3>
+        <span className="text-xs font-bold text-sky-200">{part.performance_score !== undefined ? part.performance_score : 'N/A'}</span>
       </div>
-      {/* Hover Tooltip for extra details */}
-      <div className="absolute z-20 bottom-full mb-2 left-1/2 -translate-x-1/2 w-max max-w-[240px] bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-2xl 
-                      opacity-0 group-hover:opacity-100 transition-all duration-150 pointer-events-none group-hover:pointer-events-auto 
-                      transform group-hover:-translate-y-1">
-        <p className="text-xs font-semibold text-slate-200 mb-1.5 border-b border-slate-700 pb-1">Details: {part.name}</p>
-        <div className="text-[0.7rem] space-y-0.5 text-slate-400">
-          {part.core_count && <div><ActualCpuIcon size={11} className="inline mr-1 text-slate-500" />Cores: <span className="text-slate-300">{part.core_count}</span></div>}
-          {part.thread_count && <div><GitMerge size={11} className="inline mr-1 text-slate-500" />Threads: <span className="text-slate-300">{part.thread_count}</span></div>}
-          {part.release_date && <div><CalendarDays size={11} className="inline mr-1 text-slate-500" />Released: <span className="text-slate-300">{part.release_date}</span></div>}
-          {part.tdp && <div><Info size={11} className="inline mr-1 text-slate-500" />TDP: <span className="text-slate-300">{part.tdp}</span></div>}
-          {!part.core_count && !part.thread_count && !part.release_date && !part.tdp && <p className="italic">No extra details.</p>}
-        </div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-slate-900 border-b border-r border-slate-700 rotate-45"></div> {/* Tooltip arrow */}
+      <div className="flex justify-between items-center mt-1">
+        <span className={`badge ${part.performance_tier === 'S' ? 'bg-green-500' : part.performance_tier === 'A' ? 'bg-blue-500' : 'bg-yellow-500'} text-white text-[0.6rem] font-semibold rounded-full px-2 py-0.5`}>{part.performance_tier}</span>
       </div>
     </div>
   );
@@ -79,67 +66,67 @@ interface TierCategoryCardProps {
   description: string;
   collectionPath: string; // e.g., "parts/cpu/items"
   sTierColorAccent?: string; // e.g. text-amber-400 for S-tier section header
+  slug: string;
 }
 
-const TierCategoryCard = ({ icon: Icon, title, description, collectionPath, sTierColorAccent = 'text-sky-400' }: TierCategoryCardProps) => {
+const TierCategoryCard = ({ icon: Icon, title, description, collectionPath, sTierColorAccent = 'text-sky-400', slug }: TierCategoryCardProps) => {
   const [sTierItems, setSTierItems] = useState<PartData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchTopItems = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const itemsRef = collection(db, collectionPath);
+      const q = query(itemsRef, orderBy("performance_score", "desc"), limit(3));
+      const querySnapshot = await getDocs(q);
+      const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PartData));
+      setSTierItems(items);
+    } catch (err) {
+      console.error(`Error fetching items from ${collectionPath}:`, err);
+      setError("Coming Soon");
+      setSTierItems([]); 
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    const fetchSTierItems = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const itemsRef = collection(db, collectionPath);
-        const q = query(itemsRef, where("performance_tier", "==", "S"), orderBy("performance_score", "desc"), limit(3)); // Fetch top 3 S-tier for preview
-        const querySnapshot = await getDocs(q);
-        const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PartData));
-        setSTierItems(items);
-      } catch (err) {
-        console.error(`Error fetching S-Tier items from ${collectionPath}:`, err);
-        setError(`Failed to load ${title} data.`);
-        setSTierItems([]); 
-      }
-      setIsLoading(false);
-    };
-    fetchSTierItems();
+    fetchTopItems();
   }, [collectionPath, title]);
 
   return (
-    <div className="bg-slate-800/40 border border-slate-700/70 rounded-lg p-4 shadow-md flex flex-col h-full">
-      <div className="flex items-center mb-3">
+    <div className="bg-slate-800/40 border border-slate-700/70 rounded-lg p-3 shadow-md flex flex-col h-full">
+      <div className="flex items-center mb-2">
         <Icon size={20} className={`mr-2 ${sTierColorAccent}`} />
         <h3 className={`text-lg font-semibold text-slate-100`}>{title}</h3>
       </div>
-      <p className="text-xs text-slate-400/80 mb-4 flex-grow">{description}</p>
-      
+      <p className="text-xs text-slate-400/80 mb-3 flex-grow">{description}</p>
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-2 mt-auto">
+        <div className="grid grid-cols-1 gap-1 mt-auto">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-[60px] bg-slate-700/50 rounded-md animate-pulse"></div>
+            <div key={i} className="h-[50px] bg-slate-700/50 rounded-md animate-pulse"></div>
           ))}
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center text-center text-red-400/80 mt-auto py-3">
+        <div className="flex flex-col items-center justify-center text-center text-red-400/80 mt-auto py-2">
           <Info size={18} className="mb-1" />
           <p className="text-xs">{error}</p>
         </div>
       ) : sTierItems.length > 0 ? (
-        <div className="grid grid-cols-1 gap-2 mt-auto">
+        <div className="grid grid-cols-3 gap-2">
           {sTierItems.map(item => (
             <PartCard key={item.id} part={item} />
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center text-center text-slate-500 mt-auto py-3">
+        <div className="flex flex-col items-center justify-center text-center text-slate-500 mt-auto py-2">
           <Info size={18} className="mb-1" />
-          <p className="text-xs">No S-Tier items found for preview.</p>
+          <p className="text-xs">No items found for preview.</p>
         </div>
       )}
-      {/* Link to full report page, assuming a convention like /report/cpu */}
-      <Link href={`/report/${collectionPath.split('/')[1]}`} 
-        className="block text-center mt-4 text-xs font-medium text-sky-400 hover:text-sky-300 transition-colors duration-150">
+      <Link href={`/report/${slug}`} 
+        className="block text-center mt-3 text-xs font-medium text-sky-400 hover:text-sky-300 transition-colors duration-150">
         View Full {title} &rarr;
       </Link>
     </div>
@@ -161,57 +148,65 @@ const TierListSectionLanding = () => {
             icon={CpuIcon} 
             title="CPU Tiers"
             description="Processors ranked by performance and value. Find the best CPU for gaming, streaming, or productivity."
-            collectionPath="parts/cpu/items"
+            collectionPath="cpu"
             sTierColorAccent="text-amber-400"
+            slug="cpu"
           />
           <TierCategoryCard 
             icon={GpuIcon} 
             title="GPU Tiers" 
             description="Graphics cards tiered for raw gaming power and visual fidelity. See how the latest GPUs stack up."
-            collectionPath="parts/gpu/items"
+            collectionPath="video-card"
             sTierColorAccent="text-purple-400"
+            slug="video-card"
           />
           <TierCategoryCard 
             icon={RamIcon} 
             title="RAM & Storage Tiers" 
             description="Memory and SSDs compared for speed and capacity. Optimize your system's responsiveness."
-            collectionPath="parts/ram/items"
+            collectionPath="memory"
             sTierColorAccent="text-green-400"
+            slug="memory"
           />
           <TierCategoryCard 
             icon={StorageIcon} 
             title="Storage Tiers" 
             description="SSDs and HDDs ranked by speed and capacity. Find the best storage solution for your needs."
-            collectionPath="parts/storage/items"
+            collectionPath="internal-hard-drive"
             sTierColorAccent="text-blue-400"
+            slug="internal-hard-drive"
           />
           <TierCategoryCard 
             icon={MotherboardIcon} 
             title="Motherboard Tiers" 
             description="Motherboards evaluated for compatibility and features. Choose the right foundation for your build."
-            collectionPath="parts/motherboard/items"
+            collectionPath="cpu-cooler"
             sTierColorAccent="text-red-400"
+            slug="cpu-cooler"
           />
           <TierCategoryCard 
             icon={PowerSupplyIcon} 
             title="Power Supply Tiers" 
             description="Power supplies rated for efficiency and reliability. Ensure stable power delivery to your components."
-            collectionPath="parts/psu/items"
+            collectionPath="power-supply"
             sTierColorAccent="text-yellow-400"
+            slug="power-supply"
           />
           <TierCategoryCard 
             icon={CaseIcon} 
             title="Case Tiers" 
             description="PC cases assessed for airflow and aesthetics. Find the perfect case to showcase your build."
-            collectionPath="parts/case/items"
+            collectionPath="case"
             sTierColorAccent="text-pink-400"
+            slug="case"
           />
           <TierCategoryCard 
             icon={CoolingIcon} 
             title="Cooling Tiers" 
             description="Cooling solutions ranked by performance and noise levels. Keep your system cool and quiet."
-            collectionPath="parts/cooling/items"
+            collectionPath="cpu-cooler"
             sTierColorAccent="text-teal-400"
+            slug="cpu-cooler"
           />
         </div>
       </div>

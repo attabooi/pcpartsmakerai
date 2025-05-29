@@ -39,3 +39,47 @@ body {
 .animate-slowest-move {
   animation: slowestMove 60s ease-in-out infinite;
 }
+
+/* Styles for compact tier report UI */
+.grid-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+/* Brand badges for manufacturers */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-intel {
+  background-color: #0071c5;
+  color: white;
+  padding: 0.2rem 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.badge-amd {
+  background-color: #ed1c24;
+  color: white;
+  padding: 0.2rem 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.badge-nvidia {
+  background-color: #76b900;
+  color: white;
+  padding: 0.2rem 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
