@@ -1,148 +1,208 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { db } from '../../../lib/firebase';
+import { useState, useEffect, useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  LabelList,
+} from "recharts";
+import { db } from "../../../lib/firebase";
 import { collection, getDocs, query } from "firebase/firestore";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Text } from 'recharts';
-import { Loader2, ServerCrash } from 'lucide-react';
 
-export interface CpuData {
-  id: string;
-  name: string;
-  brand?: 'Intel' | 'AMD' | string;
-  performance_score?: number;
-  value_score?: number;
+const BRAND_COLORS = {
+  Intel: "#3B82F6",
+  AMD: "#F43F5E",
+  default: "#94A3B8",
+};
+
+const TIER_COLORS = {
+  S: "#facc15",
+  A: "#a78bfa",
+  B: "#60a5fa",
+  C: "#34d399",
+  default: "#6b7280",
+};
+
+function extractBrand(name: string): string {
+  if (typeof name !== "string") return "default";
+  if (name.toLowerCase().includes("intel")) return "Intel";
+  if (name.toLowerCase().includes("amd")) return "AMD";
+  return "default";
 }
 
-export type ViewMode = 'performance' | 'value';
+function safeString(val: any): string {
+  if (typeof val === "string") return val;
+  if (val && typeof val === "object") {
+    if ("text" in val) return String(val.text);
+    if ("label" in val) return String(val.label);
+    return JSON.stringify(val);
+  }
+  return String(val ?? "Unknown");
+}
 
-const BRAND_COLORS: { [key: string]: string } = {
-  Intel: '#3B82F6',
-  AMD: '#F43F5E',
-  default: '#94A3B8'
-};
-
-const formatCpuName = (name: string) => {
-  const parts = name.split(' ');
-  return parts.slice(0, 3).join(' ');
-};
+function truncateModel(name: string, max = 26) {
+  return name.length > max ? name.slice(0, max - 3) + "..." : name;
+}
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white shadow">
-        <p className="font-semibold">{data.name}</p>
-        <p>Score: {data.score}</p>
+      <div className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-xs text-white shadow max-w-xs">
+        <p className="font-bold text-sm mb-2">{safeString(data.name)}</p>
+        <ul className="space-y-0.5">
+          <li><b>Brand:</b> <span style={{ color: BRAND_COLORS[data.brand] }}>{data.brand}</span></li>
+          <li><b>Score:</b> {data.score}</li>
+          <li><b>Tier:</b> <span style={{ color: TIER_COLORS[data.tier] }}>{data.tier}</span></li>
+          <li><b>Core Count:</b> {data.core_count ?? "-"}</li>
+          <li><b>Base Clock:</b> {data.base_clock ?? "-"} GHz</li>
+          <li><b>Boost Clock:</b> {data.boost_clock ?? "-"} GHz</li>
+          <li><b>Socket:</b> {data.socket ?? "-"}</li>
+          <li><b>TDP:</b> {data.tdp ?? "-"} W</li>
+          <li><b>iGPU:</b> {data.integrated_graphics ?? "None"}</li>
+          <li><b>SMT:</b> {data.smt ? "Yes" : "No"}</li>
+          <li>
+            <b>Price:</b>{" "}
+            {data.price && data.price > 0
+              ? `$${data.price}`
+              : <span className="text-slate-400">가격정보 없음</span>}
+          </li>
+        </ul>
       </div>
     );
   }
   return null;
 };
 
-const CpuPerformanceChart = ({ data, viewMode }: { data: CpuData[]; viewMode: ViewMode }) => {
-  const chartData = useMemo(() => {
-    return data
-      .filter(cpu => (viewMode === 'performance' ? cpu.performance_score : cpu.value_score))
-      .map(cpu => ({
-        name: formatCpuName(cpu.name),
-        score: viewMode === 'performance' ? cpu.performance_score! : cpu.value_score!,
-        brand: cpu.brand || 'default'
-      }))
-      .sort((a, b) => b.score - a.score);
-  }, [data, viewMode]);
-
-  return (
-    <ResponsiveContainer width="100%" height={500}>
-      <BarChart
-        layout="vertical"
-        data={chartData}
-        margin={{ top: 10, right: 30, left: 80, bottom: 20 }}
-      >
-        <XAxis type="number" stroke="#CBD5E1" fontSize={12} />
-        <YAxis
-          dataKey="name"
-          type="category"
-          width={150}
-          tick={({ x, y, payload }) => (
-            <Text x={x} y={y} fill="#CBD5E1" fontSize={12} textAnchor="end" verticalAnchor="middle">
-              {payload.value}
-            </Text>
-          )}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="score" radius={[0, 4, 4, 0]}>
-          {chartData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={BRAND_COLORS[entry.brand] || BRAND_COLORS.default} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
-};
-
-export default function CpuGraphPage() {
-  const [cpus, setCpus] = useState<CpuData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('performance');
+export default function CpuTierGraphPage() {
+  const [cpus, setCpus] = useState([]);
+  const [viewMode, setViewMode] = useState("performance");
 
   useEffect(() => {
-    const fetchCpus = async () => {
-      try {
-        const ref = collection(db, "parts/cpu/items");
-        const snapshot = await getDocs(query(ref));
-        const results = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as CpuData));
-        setCpus(results);
-      } catch (e) {
-        console.error(e);
-        setError("Failed to load CPU data.");
-      } finally {
-        setIsLoading(false);
-      }
+    const fetchData = async () => {
+      const ref = collection(db, "parts/cpu/items");
+      const snapshot = await getDocs(query(ref));
+      const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCpus(results);
     };
-    fetchCpus();
+    fetchData();
   }, []);
 
+  const data = useMemo(() => {
+    return cpus
+      .filter(cpu => {
+        if (viewMode === "performance") return cpu.performance_score;
+        // value 모드: 가격이 없거나 0이면 제외
+        return cpu.value_score && cpu.price && cpu.price > 0;
+      })
+      .map(cpu => {
+        const name = safeString(cpu.name);
+        const score = viewMode === "performance" ? cpu.performance_score : cpu.value_score;
+        const brand = cpu.brand || extractBrand(name);
+        const tier = viewMode === "performance" ? cpu.performance_tier : cpu.value_tier;
+        let model = name;
+        let brandLabel = "";
+        if (brand !== "default" && name.startsWith(brand)) {
+          brandLabel = brand;
+          model = name.replace(brand, "").trim();
+        }
+        return {
+          ...cpu,
+          name,
+          brand,
+          tier,
+          score,
+          brandLabel,
+          modelLabel: truncateModel(model),
+          price: cpu.price,
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+  }, [cpus, viewMode]);
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 px-4 py-6">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold">CPU Tier Report</h1>
-        <p className="text-sm text-slate-400">
-          Explore CPU rankings based on performance or value. Items are grouped by tiers (S, A, B, C)
-          and sorted by score.
-        </p>
-        <div className="mt-4 space-x-2">
-          <button
-            onClick={() => setViewMode('performance')}
-            className={`px-3 py-1 text-xs rounded-full ${viewMode === 'performance' ? 'bg-sky-500 text-white' : 'bg-slate-700 text-slate-300'}`}
-          >
-            Performance
-          </button>
-          <button
-            onClick={() => setViewMode('value')}
-            className={`px-3 py-1 text-xs rounded-full ${viewMode === 'value' ? 'bg-purple-500 text-white' : 'bg-slate-700 text-slate-300'}`}
-          >
-            Value
-          </button>
-        </div>
+    <div className="min-h-screen bg-slate-900 text-white px-4 py-6">
+      <h1 className="text-3xl font-extrabold text-center mb-1">CPU Tier Report</h1>
+      {/* <p className="text-sm text-slate-400 text-center">
+        Explore CPU rankings based on performance or value. Items are grouped by tiers (S, A, B, C) and sorted by score.
+      </p> */}
+      <p className="text-xs text-center mt-2 text-slate-500 italic">
+        {viewMode === "performance" ? (
+          <>
+            <span className="text-sky-400">Performance = boost clock × 10 + core count × 2</span><br />
+            Boost Clock determines raw processing speed, while Core Count improves multitasking.
+          </>
+        ) : (
+          <>
+            <span className="text-purple-400">Value = performance score ÷ price</span><br />
+            Value Score shows performance per dollar. CPUs with missing price are excluded.
+          </>
+        )}
+      </p>
+
+      <div className="flex justify-center gap-2 mt-4 mb-6">
+        <button
+          className={`px-4 py-1 rounded-full text-xs font-medium ${viewMode === "performance" ? "bg-sky-500 text-white" : "bg-slate-700 text-slate-300"}`}
+          onClick={() => setViewMode("performance")}
+        >
+          Performance
+        </button>
+        <button
+          className={`px-4 py-1 rounded-full text-xs font-medium ${viewMode === "value" ? "bg-purple-500 text-white" : "bg-slate-700 text-slate-300"}`}
+          onClick={() => setViewMode("value")}
+        >
+          Value
+        </button>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
-        </div>
-      ) : error ? (
-        <div className="text-center text-red-500 py-10">
-          <ServerCrash className="w-6 h-6 mx-auto mb-2" />
-          {error}
-        </div>
-      ) : (
-        <>
-          <h2 className="text-lg font-semibold text-center mb-4">CPU Tier Graph</h2>
-          <CpuPerformanceChart data={cpus} viewMode={viewMode} />
-        </>
-      )}
+      <ResponsiveContainer width="100%" height={data.length * 24 + 60}>
+        <BarChart
+          layout="vertical"
+          data={data}
+          margin={{ top: 10, right: 60, left: 120, bottom: 10 }}
+          barSize={22}
+        >
+          <XAxis type="number" stroke="#CBD5E1" fontSize={12} />
+          <YAxis
+            dataKey="name"
+            type="category"
+            width={200}
+            interval={0}
+            tick={({ x, y, payload, index }) => {
+              const d = data[index];
+              return (
+                <text
+                  x={x - 10}
+                  y={y + 7}
+                  fontSize={12}
+                  fontWeight={600}
+                  textAnchor="end"
+                  alignmentBaseline="middle"
+                >
+                  {d.brandLabel && (
+                    <tspan fill={BRAND_COLORS[d.brand] || BRAND_COLORS.default}>
+                      {d.brandLabel + " "}
+                    </tspan>
+                  )}
+                  <tspan fill="#e5e7eb">{d.modelLabel}</tspan>
+                </text>
+              );
+            }}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey="score">
+            {data.map((entry, index) => (
+              <Cell key={`bar-${index}`} fill={TIER_COLORS[entry.tier] || TIER_COLORS.default} />
+            ))}
+            <LabelList dataKey="score" position="right" fill="#CBD5E1" fontSize={11} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
