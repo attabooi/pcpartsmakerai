@@ -3,6 +3,17 @@
 import Link from "next/link";
 import { ArrowRight, Cpu, Layers, Zap, Bot } from "lucide-react";
 
+const tierLinks = [
+  { href: "/report/cpu", label: "CPU" },
+  { href: "/report/ram", label: "RAM" },
+  { href: "/report/video-card", label: "GPU" },
+  { href: "/report/internal-hard-drive", label: "HDD" },
+  { href: "/report/solid-state-drive", label: "SSD" },
+  { href: "/report/power-supply", label: "Power Supply" },
+  { href: "/report/case", label: "Case" },
+  { href: "/report/cpu-cooler", label: "Cooler" },
+];
+
 const HeroSection = () => {
   return (
     <section className="relative bg-gradient-to-br from-gray-900 via-gray-850 to-slate-900 text-primary-text py-24 sm:py-32 lg:py-40 overflow-hidden font-sans">
@@ -56,13 +67,13 @@ const HeroSection = () => {
         </p>
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-5">
           <Link
-            href="#tier-lists" // Update this href to your actual tier list section ID or page
+            href="#tier-lists"
             className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 text-sm sm:text-base font-medium rounded-lg shadow-lg text-white bg-accent-blue hover:bg-accent-blue/90 transition-all duration-200 ease-in-out transform hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-blue focus:ring-offset-gray-900"
           >
             <Layers size={18} className="mr-2.5" /> Browse Tier Lists
           </Link>
           <Link
-            href="#build-pc" // Update this href to your actual AI builder section ID or page
+            href="#build-pc"
             className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 text-sm sm:text-base font-medium rounded-lg shadow-lg text-primary-text bg-slate-700/50 hover:bg-slate-700/80 border border-slate-600/70 hover:border-slate-500 transition-all duration-200 ease-in-out transform hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-purple focus:ring-offset-gray-900 relative group"
           >
             <Bot size={18} className="mr-2.5" /> Try AI Build Generator
@@ -70,6 +81,18 @@ const HeroSection = () => {
               PREMIUM
             </span>
           </Link>
+        </div>
+        {/* Tier Report Links */}
+        <div className="mt-6 flex flex-nowrap gap-2 overflow-x-auto justify-center pb-2 hide-scrollbar">
+          {tierLinks.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="inline-block px-4 py-2 rounded-full text-xs font-semibold bg-slate-800/80 text-sky-200 hover:bg-sky-700/80 hover:text-white border border-slate-700 transition-colors whitespace-nowrap shadow"
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       </div>
     </section>

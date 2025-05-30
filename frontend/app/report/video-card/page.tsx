@@ -15,7 +15,7 @@ import { db } from "../../../lib/firebase";
 import { collection, getDocs, query } from "firebase/firestore";
 
 const BRAND_COLORS = {
-  Intel: "#3B82F6",
+  NVIDIA: "#3B82F6",
   AMD: "#F43F5E",
   default: "#94A3B8",
 };
@@ -30,7 +30,7 @@ const TIER_COLORS = {
 
 function extractBrand(name: string): string {
   if (typeof name !== "string") return "default";
-  if (name.toLowerCase().includes("intel")) return "Intel";
+  if (name.toLowerCase().includes("nvidia")) return "NVIDIA";
   if (name.toLowerCase().includes("amd")) return "AMD";
   return "default";
 }
@@ -59,19 +59,10 @@ const CustomTooltip = ({ active, payload }: any) => {
           <li><b>Brand:</b> <span style={{ color: BRAND_COLORS[data.brand] }}>{data.brand}</span></li>
           <li><b>Score:</b> {data.score}</li>
           <li><b>Tier:</b> <span style={{ color: TIER_COLORS[data.tier] }}>{data.tier}</span></li>
-          <li><b>Core Count:</b> {data.core_count ?? "-"}</li>
-          <li><b>Base Clock:</b> {data.base_clock ?? "-"} GHz</li>
-          <li><b>Boost Clock:</b> {data.boost_clock ?? "-"} GHz</li>
-          <li><b>Socket:</b> {data.socket ?? "-"}</li>
-          <li><b>TDP:</b> {data.tdp ?? "-"} W</li>
-          <li><b>iGPU:</b> {data.integrated_graphics ?? "None"}</li>
-          <li><b>SMT:</b> {data.smt ? "Yes" : "No"}</li>
-          <li>
-            <b>Price:</b>{" "}
-            {data.price && data.price > 0
-              ? `$${data.price}`
-              : <span className="text-slate-400">가격정보 없음</span>}
-          </li>
+          <li><b>Memory:</b> {data.memory ?? "-"} GB</li>
+          <li><b>Core Clock:</b> {data.core_clock ?? "-"} MHz</li>
+          <li><b>Boost Clock:</b> {data.boost_clock ?? "-"} MHz</li>
+          <li><b>Price:</b> {data.price && data.price > 0 ? `$${data.price}` : <span className="text-slate-400">가격정보 없음</span>}</li>
         </ul>
       </div>
     );
@@ -79,32 +70,31 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export default function CpuTierGraphPage() {
-  const [cpus, setCpus] = useState([]);
+export default function VideoCardTierGraphPage() {
+  const [videoCards, setVideoCards] = useState([]);
   const [viewMode, setViewMode] = useState("performance");
 
   useEffect(() => {
     const fetchData = async () => {
-      const ref = collection(db, "parts/cpu/items");
+      const ref = collection(db, "parts/video-card/items");
       const snapshot = await getDocs(query(ref));
       const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCpus(results);
+      setVideoCards(results);
     };
     fetchData();
   }, []);
 
   const data = useMemo(() => {
-    return cpus
-      .filter(cpu => {
-        if (viewMode === "performance") return cpu.performance_score;
-        // value 모드: 가격이 없거나 0이면 제외
-        return cpu.value_score && cpu.price && cpu.price > 0;
+    return videoCards
+      .filter(videoCard => {
+        if (viewMode === "performance") return videoCard.performance_score;
+        return videoCard.value_score && videoCard.price && videoCard.price > 0;
       })
-      .map(cpu => {
-        const name = safeString(cpu.name);
-        const score = viewMode === "performance" ? cpu.performance_score : cpu.value_score;
-        const brand = cpu.brand || extractBrand(name);
-        const tier = viewMode === "performance" ? cpu.performance_tier : cpu.value_tier;
+      .map(videoCard => {
+        const name = safeString(videoCard.name);
+        const score = viewMode === "performance" ? videoCard.performance_score : videoCard.value_score;
+        const brand = videoCard.brand || extractBrand(name);
+        const tier = viewMode === "performance" ? videoCard.performance_tier : videoCard.value_tier;
         let model = name;
         let brandLabel = "";
         if (brand !== "default" && name.startsWith(brand)) {
@@ -112,35 +102,32 @@ export default function CpuTierGraphPage() {
           model = name.replace(brand, "").trim();
         }
         return {
-          ...cpu,
+          ...videoCard,
           name,
           brand,
           tier,
           score,
           brandLabel,
           modelLabel: truncateModel(model),
-          price: cpu.price,
+          price: videoCard.price,
         };
       })
       .sort((a, b) => b.score - a.score);
-  }, [cpus, viewMode]);
+  }, [videoCards, viewMode]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white px-4 py-6">
-      <h1 className="text-3xl font-extrabold text-center mb-1">CPU Tier Report</h1>
-      {/* <p className="text-sm text-slate-400 text-center">
-        Explore CPU rankings based on performance or value. Items are grouped by tiers (S, A, B, C) and sorted by score.
-      </p> */}
+      <h1 className="text-3xl font-extrabold text-center mb-1">Video Card Tier Report</h1>
       <p className="text-xs text-center mt-2 text-slate-500 italic">
         {viewMode === "performance" ? (
           <>
-            <span className="text-sky-400">Performance = boost clock × 10 + core count × 2</span><br />
-            Boost Clock determines raw processing speed, while Core Count improves multitasking.
+            <span className="text-sky-400">Performance = core clock × memory</span><br />
+            Core Clock and Memory determine the video card's performance.
           </>
         ) : (
           <>
             <span className="text-purple-400">Value = performance score ÷ price</span><br />
-            Value Score shows performance per dollar. CPUs with missing price are excluded.
+            Value Score shows performance per dollar. Video cards with missing price are excluded.
           </>
         )}
       </p>
@@ -202,11 +189,10 @@ export default function CpuTierGraphPage() {
               {data.map((entry, index) => (
                 <Cell key={`bar-${index}`} fill={TIER_COLORS[entry.tier] || TIER_COLORS.default} />
               ))}
-              <LabelList dataKey="score" position="right" fill="#CBD5E1" fontSize={11} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       )}
     </div>
   );
-}
+} 

@@ -11,6 +11,17 @@ const navItems = [
   { href: "#pricing", label: "Pricing" }, // Placeholder, if you add a pricing section
 ];
 
+const tierNavItems = [
+  { href: "/report/cpu", label: "CPU" },
+  { href: "/report/ram", label: "RAM" },
+  { href: "/report/video-card", label: "GPU" },
+  { href: "/report/internal-hard-drive", label: "HDD" },
+  { href: "/report/solid-state-drive", label: "SSD" },
+  { href: "/report/power-supply", label: "Power Supply" },
+  { href: "/report/case", label: "Case" },
+  { href: "/report/cpu-cooler", label: "Cooler" },
+];
+
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -58,6 +69,16 @@ const Header = () => {
                 {item.label}
               </Link>
             ))}
+            <div className="mx-2 border-l border-slate-700 h-6 self-center" />
+            {tierNavItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-sky-300 hover:text-sky-50 hover:bg-sky-800/60 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           <div className="flex items-center">
@@ -95,6 +116,17 @@ const Header = () => {
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-md text-sm font-medium text-slate-200 hover:text-slate-50 hover:bg-slate-800/80 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className="my-2 border-t border-slate-700" />
+            {tierNavItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-md text-sm font-medium text-sky-300 hover:text-sky-50 hover:bg-sky-800/80 transition-colors"
               >
                 {item.label}
               </Link>
